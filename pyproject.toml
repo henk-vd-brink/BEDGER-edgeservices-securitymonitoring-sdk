@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "bedger"
+version = "0.1.26"
+description = ""
+authors = ["Henk van den Brink"]
+readme = "README.md"
+packages = [{include = "bedger", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.8.1,<=4.0.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.0"
+isort = "^5.13.2"
+flake8-pyproject = "^1.2.3"
+
+[tool.isort]
+profile = "black"
+line_length = 130
+
+[tool.flake8]
+max-line-length = 130
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv"
+]
+
+[tool.black]
+line-length = 130
+target-version = ['py310', 'py311']
+exclude = '''
+/(
+  \.git
+  | \.venv
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | node_modules
+)/
+'''

@@ -9,11 +9,6 @@ packages = [{include = "bedger", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.8.1,<=4.0.0"
 
-[tool.poetry.group.dev.dependencies]
-black = "^24.4.0"
-isort = "^5.13.2"
-flake8-pyproject = "^1.2.3"
-
 [tool.isort]
 profile = "black"
 line_length = 130

@@ -1,5 +1,5 @@
-from .message import Message
+from .device_event import DeviceEvent
 from .severity import Severity
 
 
-__all__ = [Message, Severity]
+__all__ = [DeviceEvent, Severity]

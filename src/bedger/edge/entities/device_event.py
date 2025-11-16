@@ -1,10 +1,17 @@
-from typing import Dict, Annotated
+from __future__ import annotations
+
+import json
+from typing import Dict, Any, Annotated
 from pydantic import BaseModel, Field, field_validator, field_serializer
 from .severity import Severity
-import json
 
 
-class Message(BaseModel):
+class DeviceEvent(BaseModel):
+    """
+    Represents a stored or transmitted device event.
+    This model is compatible with the local /device/events API.
+    """
+
     event_type: Annotated[
         str,
         Field(
@@ -13,11 +20,14 @@ class Message(BaseModel):
         ),
     ]
     severity: Severity
-    details: Annotated[Dict, Field(description="Details of the message as a JSON serializable dictionary")]
+    details: Annotated[
+        Dict[str, Any],
+        Field(description="Event-specific details, must be JSON serializable"),
+    ]
 
     @field_validator("details")
     @classmethod
-    def validate_details(cls, value: Dict) -> Dict:
+    def validate_details(cls, value: Dict[str, Any]) -> Dict[str, Any]:
         try:
             json.dumps(value)
         except TypeError:

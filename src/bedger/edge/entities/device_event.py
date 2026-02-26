@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Dict, Any, Annotated
+from typing import Dict, Any
 from pydantic import BaseModel, Field, field_validator, field_serializer
 from .severity import Severity
 
@@ -12,18 +12,13 @@ class DeviceEvent(BaseModel):
     This model is compatible with the local /device/events API.
     """
 
-    event_type: Annotated[
-        str,
-        Field(
-            description="Event type in PascalCase format",
-            pattern=r"^[A-Z][a-zA-Z0-9]*$",
-        ),
-    ]
+    event_type: str = Field(
+        description="Event type in PascalCase format",
+        pattern=r"^[A-Z][a-zA-Z0-9]*$",
+    )
     severity: Severity
-    details: Annotated[
-        Dict[str, Any],
-        Field(description="Event-specific details, must be JSON serializable"),
-    ]
+    details: Dict[str, Any] = Field(description="Event-specific details, must be JSON serializable")
+    priority: bool = False
 
     @field_validator("details")
     @classmethod

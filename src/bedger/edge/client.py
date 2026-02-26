@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import copy
+import datetime
 import json
 import socket
 import jsonpatch
 import logging
 from http.client import HTTPConnection
-from typing import Any
+from typing import Any, Union
 
 from .config import Config
 from .entities.device_event import DeviceEvent
 from . import entities
+from .entities.measurement import DeviceMeasurement
 from .errors import (
     ConnectionError,
     SendError,
@@ -91,12 +93,12 @@ class Client:
         except Exception as e:
             return False
 
-    def send_event(self, event_type: str, severity: entities.Severity, payload: dict[str, Any]) -> None:
+    def send_event(self, event_type: str, severity: entities.Severity, payload: dict[str, Any], priority: bool = False) -> None:
         """Send a DeviceEvent to /device/events."""
         if not self._connection:
             raise ConnectionError(self._config.socket_path)
 
-        event = DeviceEvent(event_type=event_type, severity=severity, details=payload)
+        event = DeviceEvent(event_type=event_type, severity=severity, details=payload, priority=priority)
         serialized = event.model_dump_json(by_alias=True).encode("utf-8")
 
         try:
@@ -119,12 +121,65 @@ class Client:
         except Exception as e:
             raise SendError("Failed to send DeviceEvent", e)
 
+    def send_measurement(
+        self,
+        metric: str,
+        value: int,
+        unit: str,
+        timestamp: Union[datetime, None] = None,
+    ) -> None:
+        """Send a DeviceMeasurement to /device/measurements."""
+        if not self._connection:
+            raise ConnectionError(self._config.socket_path)
+
+        # Default to "now" in UTC if not provided.
+        if timestamp is None:
+            timestamp = datetime.now(datetime.timezone.utc)
+
+        # Ensure timezone-aware UTC timestamp
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+        else:
+            timestamp = timestamp.astimezone(datetime.timezone.utc)
+
+        measurement = DeviceMeasurement(
+            timestamp=timestamp,
+            metric=metric,
+            value=value,
+            unit=unit,
+        )
+
+        serialized = measurement.model_dump_json(by_alias=True).encode("utf-8")
+
+        try:
+            self._connection.request(
+                "POST",
+                "/device/measurements",
+                body=serialized,
+                headers={"Content-Type": "application/json"},
+            )
+
+            response = self._connection.getresponse()
+            response_data = response.read().decode("utf-8")
+
+            if response.status != 200:
+                raise HTTPRequestError(response.status, response_data)
+
+            logger.info(f"Measurement sent successfully: {response_data}")
+
+        except HTTPRequestError:
+            raise
+        except Exception as e:
+            raise SendError("Failed to send DeviceMeasurement", e)
+
 
 class DeviceTwinClient(Client):
     """Manages device twin synchronization over the Bedger Edge API."""
 
     def __init__(self, config: Config = Config()) -> None:
         super().__init__(config)
+
+        self._twin = None
 
     def __enter__(self) -> DeviceTwinClient:
         super().__enter__()
